@@ -103,7 +103,7 @@
 
     <audio id="beep" src="beep.mp3" preload="auto"></audio>
 
-    <script>
+<script>
         const scanButton = document.getElementById("scanButton");
         const reader = document.getElementById("reader");
         const scannerModal = document.getElementById("scannerModal");
@@ -228,6 +228,15 @@
                 await stopScanner();
             }
         });
-    </script>
+		
+	if ('serviceWorker' in navigator) {
+	  window.addEventListener('load', () => {
+		navigator.serviceWorker.register('sw.js').then(registration => {
+		}).catch(error => {
+		  console.log('Ошибка регистрации ServiceWorker:', error);
+		});
+	  });
+	}
+</script>
 </body>
 </html>
