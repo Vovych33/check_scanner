@@ -105,130 +105,130 @@
     <audio id="beep" src="beep.mp3" preload="auto"></audio>
 
 <script>
-        const scanButton = document.getElementById("scanButton");
-        const reader = document.getElementById("reader");
-        const scannerModal = document.getElementById("scannerModal");
-        const numberList = document.getElementById("numberList");
-        const totalDisplay = document.getElementById("total");
-        const beepSound = document.getElementById("beep");
+	const scanButton = document.getElementById("scanButton");
+	const reader = document.getElementById("reader");
+	const scannerModal = document.getElementById("scannerModal");
+	const numberList = document.getElementById("numberList");
+	const totalDisplay = document.getElementById("total");
+	const beepSound = document.getElementById("beep");
 
-        let scannedItems = [];
-        let scannedRawTexts = new Set();
-        let html5Qrcode;
+	let scannedItems = [];
+	let scannedRawTexts = new Set();
+	let html5Qrcode;
 
-        const months = [
-            "января", "февраля", "марта", "апреля", "мая", "июня",
-            "июля", "августа", "сентября", "октября", "ноября", "декабря"
-        ];
+	const months = [
+		"января", "февраля", "марта", "апреля", "мая", "июня",
+		"июля", "августа", "сентября", "октября", "ноября", "декабря"
+	];
 
-        function getParam(text, param) {
-            const params = new URLSearchParams(text);
-            return params.get(param);
-        }
+	function getParam(text, param) {
+		const params = new URLSearchParams(text);
+		return params.get(param);
+	}
 
-        function formatCheckDate(t) {
-            if (!t) return "Дата неизвестна";
-            try {
-                const day = parseInt(t.substring(6, 8));
-                const monthIndex = parseInt(t.substring(4, 6)) - 1;
-                const hours = t.substring(9, 11);
-                const minutes = t.substring(11, 13);
-                return `${day} ${months[monthIndex]} ${hours}:${minutes}`;
-            } catch (e) { return "Ошибка даты"; }
-        }
+	function formatCheckDate(t) {
+		if (!t) return "Дата неизвестна";
+		try {
+			const day = parseInt(t.substring(6, 8));
+			const monthIndex = parseInt(t.substring(4, 6)) - 1;
+			const hours = t.substring(9, 11);
+			const minutes = t.substring(11, 13);
+			return `${day} ${months[monthIndex]} ${hours}:${minutes}`;
+		} catch (e) { return "Ошибка даты"; }
+	}
 
-        function updateDisplay() {
-            numberList.innerHTML = "";
-            let total = 0;
-            scannedItems.forEach(item => {
-                const li = document.createElement("li");
-                li.textContent = `${item.dateStr} — ${item.amount}₽`;
-                numberList.appendChild(li);
-                total += item.amount;
-            });
-            totalDisplay.textContent = `Итог: ${total}₽`;
-        }
+	function updateDisplay() {
+		numberList.innerHTML = "";
+		let total = 0;
+		scannedItems.forEach(item => {
+			const li = document.createElement("li");
+			li.textContent = `${item.dateStr} — ${item.amount}₽`;
+			numberList.appendChild(li);
+			total += item.amount;
+		});
+		totalDisplay.textContent = `Итог: ${total}₽`;
+	}
 
-        async function stopScanner() {
-            if (html5Qrcode && html5Qrcode.isScanning) {
-                await html5Qrcode.stop();
-            }
-            scannerModal.style.display = "none";
-            scanButton.textContent = "Сканировать";
-        }
+	async function stopScanner() {
+		if (html5Qrcode && html5Qrcode.isScanning) {
+			await html5Qrcode.stop();
+		}
+		scannerModal.style.display = "none";
+		scanButton.textContent = "Сканировать";
+	}
 
-        function showAlert(message) {
-            document.getElementById("alertMessage").textContent = message;
-            document.getElementById("customAlert").style.display = "block";
-        }
+	function showAlert(message) {
+		document.getElementById("alertMessage").textContent = message;
+		document.getElementById("customAlert").style.display = "block";
+	}
 
-        function closeAlert() {
-            document.getElementById("customAlert").style.display = "none";
-        }
+	function closeAlert() {
+		document.getElementById("customAlert").style.display = "none";
+	}
 
-        scanButton.addEventListener("click", async () => {
-            if (!html5Qrcode || !html5Qrcode.isScanning) {
-                scanButton.textContent = "Остановить";
-                scannerModal.style.display = "block";
+	scanButton.addEventListener("click", async () => {
+		if (!html5Qrcode || !html5Qrcode.isScanning) {
+			scanButton.textContent = "Остановить";
+			scannerModal.style.display = "block";
 
-                html5Qrcode = new Html5Qrcode("reader");
-                try {
-                    await html5Qrcode.start(
-                        { facingMode: "environment" },
-                        { fps: 10, qrbox: 250 },
-                        async (decodedText) => {
-                            if (scannedRawTexts.has(decodedText)) {
-                                showAlert("Этот чек уже отсканирован");
-                                await stopScanner();
-                                return;
-                            }
+			html5Qrcode = new Html5Qrcode("reader");
+			try {
+				await html5Qrcode.start(
+					{ facingMode: "environment" },
+					{ fps: 10, qrbox: 250 },
+					async (decodedText) => {
+						if (scannedRawTexts.has(decodedText)) {
+							showAlert("Этот чек уже отсканирован");
+							await stopScanner();
+							return;
+						}
 
-                            const sVal = getParam(decodedText, 's');
-                            const tVal = getParam(decodedText, 't');
+						const sVal = getParam(decodedText, 's');
+						const tVal = getParam(decodedText, 't');
 
-                            if (sVal && tVal) {
-                                const now = new Date();
-                                const currentMonth = now.getMonth();
-                                const currentYear = now.getFullYear();
+						if (sVal && tVal) {
+							const now = new Date();
+							const currentMonth = now.getMonth();
+							const currentYear = now.getFullYear();
 
-                                const checkYear = parseInt(tVal.substring(0, 4));
-                                const checkMonth = parseInt(tVal.substring(4, 6)) - 1;
+							const checkYear = parseInt(tVal.substring(0, 4));
+							const checkMonth = parseInt(tVal.substring(4, 6)) - 1;
 
-                                const diffMonths = (currentYear - checkYear) * 12 + (currentMonth - checkMonth);
+							const diffMonths = (currentYear - checkYear) * 12 + (currentMonth - checkMonth);
 
-                                if (diffMonths === 0) {
-                                    showAlert("Этот чек ещё рано сканировать");
-                                    await stopScanner();
-                                    return;
-                                } 
-                                
-                                if (diffMonths > 1) {
-                                    showAlert("Этот чек уже поздно сканировать");
-                                    await stopScanner();
-                                    return;
-                                }
+							if (diffMonths === 0) {
+								showAlert("Этот чек ещё рано сканировать");
+								await stopScanner();
+								return;
+							} 
+							
+							if (diffMonths > 1) {
+								showAlert("Этот чек уже поздно сканировать");
+								await stopScanner();
+								return;
+							}
 
-                                const amount = parseFloat(sVal);
-                                const dateStr = formatCheckDate(tVal);
-                                
-                                scannedRawTexts.add(decodedText);
-                                scannedItems.push({ amount, dateStr });
-                                
-                                updateDisplay();
-                                beepSound.play().catch(() => {});
-                                
-                                await stopScanner();
-                            }
-                        }
-                    );
-                } catch (err) {
-                    scanButton.textContent = "Сканировать";
-                    scannerModal.style.display = "none";
-                }
-            } else {
-                await stopScanner();
-            }
-        });
+							const amount = parseFloat(sVal);
+							const dateStr = formatCheckDate(tVal);
+							
+							scannedRawTexts.add(decodedText);
+							scannedItems.push({ amount, dateStr });
+							
+							updateDisplay();
+							beepSound.play().catch(() => {});
+							
+							await stopScanner();
+						}
+					}
+				);
+			} catch (err) {
+				scanButton.textContent = "Сканировать";
+				scannerModal.style.display = "none";
+			}
+		} else {
+			await stopScanner();
+		}
+	});
 		
 	if ('serviceWorker' in navigator) {
 	  window.addEventListener('load', () => {
