@@ -177,33 +177,40 @@
 					{ facingMode: "environment" },
 					{ fps: 10, qrbox: 250 },
 					async (decodedText) => {
-						if (scannedRawTexts.has(decodedText)) {
-							showAlert("Этот чек уже отсканирован");
-							await stopScanner();
-							return;
-						}
-
 						const sVal = getParam(decodedText, 's');
 						const tVal = getParam(decodedText, 't');
 
 						if (sVal && tVal) {
 							const now = new Date();
-							const currentMonth = now.getMonth();
 							const currentYear = now.getFullYear();
+							const currentMonth = now.getMonth();
 
 							const checkYear = parseInt(tVal.substring(0, 4));
 							const checkMonth = parseInt(tVal.substring(4, 6)) - 1;
+							const checkDay = parseInt(tVal.substring(6, 8));
 
 							const diffMonths = (currentYear - checkYear) * 12 + (currentMonth - checkMonth);
 
-							if (diffMonths === 0) {
-								showAlert("Этот чек ещё рано сканировать");
-								await stopScanner();
-								return;
-							} 
-							
-							if (diffMonths > 1) {
-								showAlert("Этот чек уже поздно сканировать");
+							const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+							const daysUntilNextMonth = lastDayOfMonth - now.getDate();
+
+							let isScanable = false;
+							let errorMsg = "";
+
+							if (diffMonths === 1) {
+								isScanable = true;
+							} else if (diffMonths === 0) {
+								if (daysUntilNextMonth <= 2) { 
+									isScanable = true;
+								} else {
+									errorMsg = "Этот чек ещё рано сканировать";
+								}
+							} else if (diffMonths > 1) {
+								errorMsg = "Этот чек уже поздно сканировать";
+							}
+
+							if (!isScanable) {
+								showAlert(errorMsg);
 								await stopScanner();
 								return;
 							}
