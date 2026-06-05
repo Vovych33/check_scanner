@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Сканер чеков</title>
-	<link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json">
     <link rel="shortcut icon" href="img/favicon.ico">
     <script src="html5-qrcode.min.js"></script>
     <style>
@@ -12,7 +12,6 @@
             font-family: sans-serif;
             text-align: center;
             margin: 30px;
-            position: relative;
             min-height: 100vh;
             padding-bottom: 60px;
         }
@@ -71,7 +70,7 @@
 
         .alert-box {
             background: white; width: 80%; max-width: 300px; padding: 20px; 
-            border-radius: 10px; text-align: center; 
+            border-radius: 10px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             position: absolute; top: 50%; left: 50%; 
             transform: translate(-50%, -50%);
@@ -103,166 +102,165 @@
     <audio id="beep" src="beep.mp3" preload="auto"></audio>
 
 <script>
-	const scanButton = document.getElementById("scanButton");
-	const scannerModal = document.getElementById("scannerModal");
-	const numberList = document.getElementById("numberList");
-	const totalDisplay = document.getElementById("total");
-	const beepSound = document.getElementById("beep");
+    const scanButton = document.getElementById("scanButton");
+    const scannerModal = document.getElementById("scannerModal");
+    const numberList = document.getElementById("numberList");
+    const totalDisplay = document.getElementById("total");
+    const beepSound = document.getElementById("beep");
 
-	let scannedItems = [];
-	let scannedRawTexts = new Set();
-	
-	const html5Qrcode = new Html5Qrcode("reader"); 
-	let isProcessing = false;
+    let scannedItems = [];
+    let scannedRawTexts = new Set();
+    
+    const html5Qrcode = new Html5Qrcode("reader"); 
+    let isProcessing = false;
 
-	const months = [
-		"января", "февраля", "марта", "апреля", "мая", "июня",
-		"июля", "августа", "сентября", "октября", "ноября", "декабря"
-	];
+    const months = [
+        "января", "февраля", "марта", "апреля", "мая", "июня",
+        "июля", "августа", "сентября", "октября", "ноября", "декабря"
+    ];
 
-	function getParam(text, param) {
-		const params = new URLSearchParams(text);
-		return params.get(param);
-	}
+    function getParam(text, param) {
+        return new URLSearchParams(text).get(param);
+    }
 
-	function formatCheckDate(t) {
-		if (!t) return "Дата неизвестна";
-		try {
-			const day = parseInt(t.substring(6, 8));
-			const monthIndex = parseInt(t.substring(4, 6)) - 1;
-			const hours = t.substring(9, 11);
-			const minutes = t.substring(11, 13);
-			return `${day} ${months[monthIndex]} ${hours}:${minutes}`;
-		} catch (e) { return "Ошибка даты"; }
-	}
+    function formatCheckDate(t) {
+        if (!t) return "Дата неизвестна";
+        try {
+            const day = +t.substring(6, 8);
+            const monthIndex = +t.substring(4, 6) - 1;
+            const hours = t.substring(9, 11);
+            const minutes = t.substring(11, 13);
+            return `${day} ${months[monthIndex]} ${hours}:${minutes}`;
+        } catch (e) { return "Ошибка даты"; }
+    }
 
-	function formatNumber(value) {
-		return new Intl.NumberFormat('ru-RU').format(value);
-	}
+    function formatNumber(value) {
+        return new Intl.NumberFormat('ru-RU', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+        }).format(value);
+    }
 
-	function updateDisplay() {
-		numberList.innerHTML = "";
-		let total = 0;
-		scannedItems.forEach(item => {
-			const li = document.createElement("li");
-			li.textContent = `${item.dateStr} — ${formatNumber(item.amount)}₽`;
-			numberList.appendChild(li);
-			total += item.amount;
-		});
-		totalDisplay.textContent = `Итог: ${formatNumber(total)}₽`;
-	}
+    function updateDisplay() {
+        numberList.innerHTML = "";
+        let total = 0;
+        scannedItems.forEach(item => {
+            const li = document.createElement("li");
+            li.textContent = `${item.dateStr} — ${formatNumber(item.amount)}₽`;
+            numberList.appendChild(li);
+            total += item.amount;
+        });
+        total = Math.round(total * 100) / 100; 
+        totalDisplay.textContent = `Итог: ${formatNumber(total)}₽`;
+    }
 
-	async function stopScanner() {
-		if (html5Qrcode && html5Qrcode.isScanning) {
-			try {
-				await html5Qrcode.stop();
-			} catch (err) {
-				console.error("Ошибка остановки сканера:", err);
-			}
-		}
-		scannerModal.style.display = "none";
-		scanButton.textContent = "Сканировать";
-		isProcessing = false;
-	}
+    async function stopScanner() {
+        if (html5Qrcode.isScanning) {
+            try {
+                await html5Qrcode.stop();
+            } catch (err) {
+                console.error("Ошибка остановки сканера:", err);
+            }
+        }
+        scannerModal.style.display = "none";
+        scanButton.textContent = "Сканировать";
+        isProcessing = false;
+    }
 
-	function showAlert(message) {
-		document.getElementById("alertMessage").textContent = message;
-		document.getElementById("customAlert").style.display = "block";
-	}
+    function showAlert(message) {
+        document.getElementById("alertMessage").textContent = message;
+        document.getElementById("customAlert").style.display = "block";
+    }
 
-	function closeAlert() {
-		document.getElementById("customAlert").style.display = "none";
-	}
+    function closeAlert() {
+        document.getElementById("customAlert").style.display = "none";
+    }
 
-	scanButton.addEventListener("click", async () => {
-		if (html5Qrcode && html5Qrcode.isScanning) {
-			await stopScanner();
-			return;
-		}
+    scanButton.addEventListener("click", async () => {
+        if (html5Qrcode.isScanning) {
+            await stopScanner();
+            return;
+        }
 
-		scanButton.textContent = "Остановить";
-		scannerModal.style.display = "block";
+        scanButton.textContent = "Остановить";
+        scannerModal.style.display = "block";
 
-		try {
-			await html5Qrcode.start(
-				{ facingMode: "environment" },
-				{ fps: 10, qrbox: 250 },
-				async (decodedText) => {
-					if (isProcessing) return; 
+        try {
+            await html5Qrcode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: 250 },
+                async (decodedText) => {
+                    if (isProcessing) return; 
 
-					if (scannedRawTexts.has(decodedText)) {
-						isProcessing = true;
-						showAlert("Этот чек уже отсканирован");
-						await stopScanner();
-						return;
-					}
+                    if (scannedRawTexts.has(decodedText)) {
+                        isProcessing = true;
+                        showAlert("Этот чек уже отсканирован");
+                        await stopScanner();
+                        return;
+                    }
 
-					const sVal = getParam(decodedText, 's');
-					const tVal = getParam(decodedText, 't');
+                    const sVal = getParam(decodedText, 's');
+                    const tVal = getParam(decodedText, 't');
 
-					if (sVal && tVal) {
-						isProcessing = true;
+                    if (sVal && tVal) {
+                        isProcessing = true;
 
-						const now = new Date();
-						const currentMonth = now.getMonth();
-						const currentYear = now.getFullYear();
+                        const now = new Date();
+                        const currentMonth = now.getMonth();
+                        const currentYear = now.getFullYear();
 
-						const checkYear = parseInt(tVal.substring(0, 4));
-						const checkMonth = parseInt(tVal.substring(4, 6)) - 1;
-						const checkDay = parseInt(tVal.substring(6, 8));
+                        const checkYear = +tVal.substring(0, 4);
+                        const checkMonth = +tVal.substring(4, 6) - 1;
+                        const checkDay = +tVal.substring(6, 8);
 
-						const diffMonths = (currentYear - checkYear) * 12 + (currentMonth - checkMonth);
+                        const diffMonths = (currentYear - checkYear) * 12 + (currentMonth - checkMonth);
 
-						if (diffMonths < 0) {
-							showAlert("Этот чек ещё рано сканировать");
-							await stopScanner();
-							return;
-						}
+                        if (diffMonths < 0) {
+                            showAlert("Этот чек ещё рано сканировать");
+                            await stopScanner();
+                            return;
+                        }
 
-						if (diffMonths === 0) {
-							const lastDayOfMonth = new Date(checkYear, checkMonth + 1, 0).getDate();
-							const daysLeftForCheck = lastDayOfMonth - checkDay + 1;
+                        if (diffMonths === 0) {
+                            const lastDayOfMonth = new Date(checkYear, checkMonth + 1, 0).getDate();
+                            const daysLeftForCheck = lastDayOfMonth - checkDay + 1;
 
-							if (daysLeftForCheck > 3) {
-								showAlert("Этот чек ещё рано сканировать");
-								await stopScanner();
-								return;
-							}
-						}
+                            if (daysLeftForCheck > 3) {
+                                showAlert("Этот чек ещё рано сканировать");
+                                await stopScanner();
+                                return;
+                            }
+                        }
 
-						if (diffMonths > 1) {
-							showAlert("Этот чек уже поздно сканировать");
-							await stopScanner();
-							return;
-						}
+                        if (diffMonths > 1) {
+                            showAlert("Этот чек уже поздно сканировать");
+                            await stopScanner();
+                            return;
+                        }
 
-						const amount = parseFloat(sVal);
-						const dateStr = formatCheckDate(tVal);
-						
-						scannedRawTexts.add(decodedText);
-						scannedItems.push({ amount, dateStr });
-						
-						updateDisplay();
-						beepSound.play().catch(() => {});
-						
-						await stopScanner();
-					}
-				}
-			);
-		} catch (err) {
-			console.error("Ошибка запуска сканера:", err);
-			await stopScanner();
-		}
-	});
-		
-	if ('serviceWorker' in navigator) {
-	  window.addEventListener('load', () => {
-		navigator.serviceWorker.register('sw.js').then(registration => {
-		}).catch(error => {
-		  console.log('Ошибка регистрации ServiceWorker:', error);
-		});
-	  });
-	}
+                        scannedRawTexts.add(decodedText);
+                        scannedItems.push({ amount: parseFloat(sVal), dateStr: formatCheckDate(tVal) });
+                        
+                        updateDisplay();
+                        beepSound.play().catch(() => {});
+                        
+                        await stopScanner();
+                    }
+                }
+            );
+        } catch (err) {
+            console.error("Ошибка запуска сканера:", err);
+            await stopScanner();
+        }
+    });
+        
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(error => {
+                console.log('Ошибка регистрации ServiceWorker:', error);
+            });
+        });
+    }
 </script>
 </body>
 </html>
