@@ -136,16 +136,20 @@
 		} catch (e) { return "Ошибка даты"; }
 	}
 
+	function formatNumber(value) {
+		return new Intl.NumberFormat('ru-RU').format(value);
+	}
+
 	function updateDisplay() {
 		numberList.innerHTML = "";
 		let total = 0;
 		scannedItems.forEach(item => {
 			const li = document.createElement("li");
-			li.textContent = `${item.dateStr} — ${item.amount}₽`;
+			li.textContent = `${item.dateStr} — ${formatNumber(item.amount)}₽`;
 			numberList.appendChild(li);
 			total += item.amount;
 		});
-		totalDisplay.textContent = `Итог: ${total}₽`;
+		totalDisplay.textContent = `Итог: ${formatNumber(total)}₽`;
 	}
 
 	async function stopScanner() {
